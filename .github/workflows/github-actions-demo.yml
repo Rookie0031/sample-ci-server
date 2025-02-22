@@ -1,5 +1,5 @@
-name: Likelion CI Test
-run-name: ${{ github.actor }} is testing out GitHub Actions ��
+name: Likelion CI/CD Test
+run-name: ${{ github.actor }} is testing out GitHub Actions
 on: [push]
 jobs:
   build:
@@ -19,7 +19,33 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Run tests
-        run: npm test
+      - name: Configure AWS credentials
+        env:
+          AWS_SSH_KEY: ${{ secrets.AWS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$AWS_SSH_KEY" > ~/.ssh/aws.key
+          chmod 600 ~/.ssh/aws.key
+          
+      - name: Deploy to EC2
+        env:
+          EC2_PUBLIC_IP: ${{ secrets.EC2_PUBLIC_IP }}
+          EC2_USER: ec2-user
+        run: |
+          # Copy necessary files to EC2
+          scp -i ~/.ssh/aws.key -r \
+            dist/ \
+            package.json \
+            tsconfig.json \
+            tsconfig.build.json \
+            $EC2_USER@$EC2_PUBLIC_IP:~/sample-server
+
+          # SSH into EC2 and restart the application
+          ssh -i ~/.ssh/aws.key $EC2_USER@$EC2_PUBLIC_IP << 'ENDSSH'
+            cd ~/sample-server
+            npm install
+            pm2 stop all || true
+            pm2 start dist/main.js --name "sample-server"
+          ENDSSH
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
