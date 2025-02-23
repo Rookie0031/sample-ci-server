@@ -1,0 +1,38 @@
+on:
+  push:
+    branches: [ master]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Generate version
+      id: version
+      run: |
+        echo "version=$(date +'%Y%m%d_%H%M%S')-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }} 
+      
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Build and push Docker image 
+      run: |
+        # buildx 설정
+        docker buildx create --name mybuilder --use
+        docker buildx inspect --bootstrap
+        
+        # 멀티 플랫폼 빌드 및 푸시
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          -t 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com/sample-server:v2 \
+          --push .

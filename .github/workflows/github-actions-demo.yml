@@ -34,5 +34,34 @@ jobs:
         # 멀티 플랫폼 빌드 및 푸시
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
-          -t 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com/sample-server:v2 \
+          -t 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com/sample-server:latest \
           --push .
+          
+    - name: Deploy to EC2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_KEY }}
+        EC2_HOST: ${{ secrets.EC2_PUBLIC_IP }}
+        EC2_USER: ec2-user
+      run: |
+        # SSH 키 설정
+        echo "$SSH_PRIVATE_KEY" > ssh_key.pem
+        chmod 600 ssh_key.pem
+        
+        # EC2에 접속하여 컨테이너 업데이트 실행
+        ssh -o StrictHostKeyChecking=no -i ssh_key.pem ${EC2_USER}@${EC2_HOST} '
+          # ECR 로그인
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com
+          
+          # 최신 이미지 풀
+          docker pull 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com/sample-server:latest
+          
+          # 기존 컨테이너 중지 및 제거
+          docker stop sample-server || true
+          docker rm sample-server || true
+          
+          # 새 컨테이너 실행
+          docker run -d --name sample-server --restart always -p 3000:3000 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com/sample-server:latest
+        '
+        
+        # 임시 SSH 키 파일 제거
+        rm ssh_key.pem
