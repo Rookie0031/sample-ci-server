@@ -26,9 +26,6 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v2
     
     - name: Build and push Docker image 
-      env:
-        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-        IMAGE_TAG: ${{ steps.version.outputs.version }}
       run: |
         # buildx 설정
         docker buildx create --name mybuilder --use
@@ -37,6 +34,5 @@ jobs:
         # 멀티 플랫폼 빌드 및 푸시
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
-          -t ${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:${IMAGE_TAG} \
-          -t ${{ steps.login-ecr.outputs.registry }}/${ECR_REPOSITORY}:latest \
+          -t 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com/sample-server:latest \
           --push .
