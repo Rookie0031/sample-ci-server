@@ -64,4 +64,4 @@ jobs:
         '
         
         # 임시 SSH 키 파일 제거
-        rm ssh_key.pem
+        rm ssh_key.pem 
