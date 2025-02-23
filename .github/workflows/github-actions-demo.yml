@@ -44,5 +44,5 @@ jobs:
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           -t ${ECR_REPOSITORY}:${IMAGE_TAG} \
-          -t ${ECR_REPOSITORY}:latest \
+          -t ${ECR_REPOSITORY}:latest \ 
           --push .
