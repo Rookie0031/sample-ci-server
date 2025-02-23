@@ -42,12 +42,26 @@ jobs:
         SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_KEY }}
         EC2_HOST: ${{ secrets.EC2_PUBLIC_IP }}
         EC2_USER: ec2-user
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
       run: |
         # SSH 키 설정
         echo "$SSH_PRIVATE_KEY" > ssh_key.pem
         chmod 600 ssh_key.pem
         
-        # EC2에 접속하여 컨테이너 업데이트 실행
+        # EC2에 접속하여 AWS 자격 증명 설정 및 컨테이너 업데이트 실행
+        ssh -o StrictHostKeyChecking=no -i ssh_key.pem ${EC2_USER}@${EC2_HOST} '
+          # AWS 자격 증명 디렉토리 생성
+          mkdir -p ~/.aws
+        '
+        # AWS 자격 증명 파일 생성 및 전송
+        echo "[default]
+        aws_access_key_id=${AWS_ACCESS_KEY_ID}
+        aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+        region=${AWS_REGION}" | ssh -o StrictHostKeyChecking=no -i ssh_key.pem ${EC2_USER}@${EC2_HOST} "cat > ~/.aws/credentials"
+        
+        # 컨테이너 업데이트 실행
         ssh -o StrictHostKeyChecking=no -i ssh_key.pem ${EC2_USER}@${EC2_HOST} '
           # ECR 로그인
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 231327016105.dkr.ecr.ap-northeast-2.amazonaws.com
