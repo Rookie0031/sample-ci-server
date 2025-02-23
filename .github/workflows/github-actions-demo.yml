@@ -40,9 +40,9 @@ jobs:
         docker buildx create --name mybuilder --use
         docker buildx inspect --bootstrap
         
-        # 멀티 플랫폼 빌드 및 푸시
+        # 멀티 플랫폼 빌드 및 푸시  
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
-          -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
-          -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
+          -t ${ECR_REPOSITORY}:${IMAGE_TAG} \
+          -t ${ECR_REPOSITORY}:latest \
           --push .
